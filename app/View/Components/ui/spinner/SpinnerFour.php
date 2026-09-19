@@ -1,0 +1,27 @@
+<?php
+
+namespace App\View\Components\ui\spinner;
+
+use Closure;
+use Illuminate\Contracts\View\View;
+use Illuminate\View\Component;
+
+class SpinnerFour extends Component
+{
+    /**
+     * Create a new component instance.
+     */
+    public function __construct(
+        public bool $iconOnly = false
+    ) {
+        //
+    }
+
+    /**
+     * Get the view / contents that represent the component.
+     */
+    public function render(): View|Closure|string
+    {
+        return view('components.ui.spinner.spinner-four');
+    }
+}
