@@ -11,17 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendors', function (Blueprint $table) {
+        Schema::create('stores', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('contact_name')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('email')->nullable();
+            $table->string('city', 100);
+            $table->string('area')->nullable();
             $table->text('address')->nullable();
-            $table->string('category')->nullable();
+            $table->string('contact_name')->nullable();
+            $table->string('contact_phone', 50)->nullable();
+            // List of {day_from, day_to, opens_at, closes_at}; days are ISO-8601 (1 = Monday ... 7 = Sunday).
+            $table->json('opening_hours')->nullable();
+            $table->text('notes')->nullable();
             $table->string('status')->default('active');
             $table->timestamps();
 
+            $table->index('city');
             $table->index('status');
         });
     }
@@ -31,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendors');
+        Schema::dropIfExists('stores');
     }
 };

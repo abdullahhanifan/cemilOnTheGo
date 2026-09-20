@@ -19,18 +19,18 @@ test('admin gets all menu groups and items in filtered sidebar', function () {
     $filteredGroups = MenuHelper::getFilteredMenuGroups($admin);
 
     expect($filteredGroups)->toHaveCount(count($allGroups));
-    expect(array_column($filteredGroups, 'title'))->toEqual(['Dashboard', 'Vendor', 'Access Control']);
+    expect(array_column($filteredGroups, 'title'))->toEqual(['Dashboard', 'Toko', 'Access Control']);
 });
 
-test('default user role only sees the dashboard group in filtered sidebar', function () {
+test('default role has no permissions and sees no group in the filtered sidebar', function () {
     $user = User::factory()->create();
     $user->assignRole(config('alh.default_role'));
 
     $filteredGroups = MenuHelper::getFilteredMenuGroups($user);
     $titles = array_column($filteredGroups, 'title');
 
-    expect($titles)->toEqual(['Dashboard']);
-    expect($titles)->not->toContain('Vendor');
+    expect($titles)->toEqual([]);
+    expect($titles)->not->toContain('Toko');
     expect($titles)->not->toContain('Access Control');
 });
 
@@ -48,10 +48,10 @@ test('menu permissions are derived per action from the menu keys', function () {
         'dashboard:dashboard-create',
         'dashboard:dashboard-edit',
         'dashboard:dashboard-delete',
-        'vendor:vendor-view',
-        'vendor:vendor-create',
-        'vendor:vendor-edit',
-        'vendor:vendor-delete',
+        'store:store-view',
+        'store:store-create',
+        'store:store-edit',
+        'store:store-delete',
         'access-control:users-view',
         'access-control:users-create',
         'access-control:users-edit',

@@ -2,41 +2,45 @@
 
 use Livewire\Component;
 use Livewire\Attributes\On;
-use App\Models\Vendor;
+use App\Models\Store;
 
 new class extends Component {
-    public int $vendorId = 0;
-    public string $vendorName = '';
-    public bool $isDeleteOpen = false;
+    public int $storeId = 0;
+    public string $storeName = '';
+    public bool $isDeactivateOpen = false;
 
-    #[On('open-vendor-delete')]
-    public function openDelete(int $id, string $name): void
+    #[On('open-store-deactivate')]
+    public function openDeactivate(int $id, string $name): void
     {
-        $this->vendorId = $id;
-        $this->vendorName = $name;
-        $this->isDeleteOpen = true;
+        $this->storeId = $id;
+        $this->storeName = $name;
+        $this->isDeactivateOpen = true;
     }
 
     /**
      * Authorized here, not just on the page that dispatched the open event —
-     * see the note in vendor-form-modal.blade.php.
+     * see the note in store-form-modal.blade.php.
+     *
+     * Stores are deactivated through `status`, never hard-deleted, so their
+     * history stays intact and they can be reactivated from the edit form.
      */
-    public function deleteVendor(): void
+    public function deactivateStore(): void
     {
-        abort_unless(auth()->user()?->can('vendor:vendor-delete'), 403);
+        abort_unless(auth()->user()?->can('store:store-delete'), 403);
 
         try {
-            $vendor = Vendor::findOrFail($this->vendorId);
-            $vendor->delete();
-            $this->isDeleteOpen = false;
+            $store = Store::findOrFail($this->storeId);
+            $store->update(['status' => 'inactive']);
+            $this->isDeactivateOpen = false;
             $this->resetState();
-            $msg = 'Vendor berhasil dihapus!';
+            $msg = 'Toko berhasil dinonaktifkan!';
             session()->flash('success', $msg);
             $this->dispatch('notify', type: 'success', message: $msg);
-            $this->dispatch('vendor-deleted');
+            $this->dispatch('store-deactivated');
         } catch (\Throwable $e) {
-            $this->isDeleteOpen = false;
-            $msg = 'Gagal menghapus vendor: ' . $e->getMessage();
+            report($e);
+            $this->isDeactivateOpen = false;
+            $msg = 'Gagal menonaktifkan toko. Silakan coba lagi.';
             session()->flash('error', $msg);
             $this->dispatch('notify', type: 'error', message: $msg);
         }
@@ -44,14 +48,14 @@ new class extends Component {
 
     private function resetState(): void
     {
-        $this->vendorId = 0;
-        $this->vendorName = '';
+        $this->storeId = 0;
+        $this->storeName = '';
     }
 };
 ?>
 
 <div>
-  <div x-data="{ show: @entangle('isDeleteOpen') }" x-show="show" x-cloak
+  <div x-data="{ show: @entangle('isDeactivateOpen') }" x-show="show" x-cloak
     class="z-99999 fixed inset-0 flex items-center justify-center overflow-y-auto p-5">
     <div @click="show = false" class="fixed inset-0 h-full w-full bg-gray-900/50 backdrop-blur-sm"></div>
 
@@ -63,14 +67,14 @@ new class extends Component {
           <x-svg.warning class="h-6 w-6" />
         </div>
         <h4 class="text-lg font-bold text-gray-800 dark:text-white">
-          Hapus Data Vendor
+          Nonaktifkan Toko
         </h4>
         <p class="mt-2 text-xs text-neutral-label dark:text-gray-400">
-          Data vendor ini akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+          Toko ini akan ditandai nonaktif. Datanya tetap tersimpan dan bisa diaktifkan kembali lewat form edit.
         </p>
-        @if ($vendorName)
+        @if ($storeName)
           <div class="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-800 dark:bg-white/[0.02]">
-            <span class="block text-sm font-semibold text-gray-800 dark:text-white">{{ $vendorName }}</span>
+            <span class="block text-sm font-semibold text-gray-800 dark:text-white">{{ $storeName }}</span>
           </div>
         @endif
       </div>
@@ -80,10 +84,10 @@ new class extends Component {
           class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5">
           Batal
         </button>
-        <button type="button" wire:click="deleteVendor" wire:loading.attr="disabled"
+        <button type="button" wire:click="deactivateStore" wire:loading.attr="disabled"
           class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">
-          <x-ui.spinner.spinner-four :icon-only="true" class="w-5 h-5 text-white" wire:loading wire:target="deleteVendor" />
-          <span>Hapus Vendor</span>
+          <x-ui.spinner.spinner-four :icon-only="true" class="w-5 h-5 text-white" wire:loading wire:target="deactivateStore" />
+          <span>Nonaktifkan Toko</span>
         </button>
       </div>
     </div>

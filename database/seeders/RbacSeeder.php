@@ -38,8 +38,14 @@ class RbacSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => config('alh.super_admin_role')]);
         $admin->syncPermissions(Permission::all());
 
-        // User: base role without admin access
-        $user = Role::firstOrCreate(['name' => config('alh.default_role')]);
-        $user->syncPermissions(['dashboard:dashboard-view']);
+        // Default role: neutral, with no permissions on purpose. A self-registered
+        // account gets this role and can do nothing until an admin grants access.
+        $default = Role::firstOrCreate(['name' => config('alh.default_role')]);
+        $default->syncPermissions([]);
+
+        // Mitra: reserved for a future partner login. Seeded empty and not used yet:
+        // partners are records in the `partners` table, not users with this role.
+        $mitra = Role::firstOrCreate(['name' => 'mitra']);
+        $mitra->syncPermissions([]);
     }
 }

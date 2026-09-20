@@ -6,21 +6,24 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Vendor;
+use App\Models\Store;
 
-new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Daftar Toko')] class extends Component {
     use WithPagination;
+
+    /** Columns the table may be sorted by; anything else falls back to id. */
+    private const SORTABLE_COLUMNS = ['id', 'name', 'city', 'status'];
 
     public function mount()
     {
-        abort_unless(auth()->user()?->can('vendor:vendor-view'), 403);
+        abort_unless(auth()->user()?->can('store:store-view'), 403);
     }
 
     public string $search = '';
-    public string $filterCategory = '';
+    public string $filterCity = '';
     public string $filterStatus = '';
 
-    public string $tempFilterCategory = '';
+    public string $tempFilterCity = '';
     public string $tempFilterStatus = '';
 
     public int $perPage = 10;
@@ -29,7 +32,7 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'filterCategory' => ['except' => ''],
+        'filterCity' => ['except' => ''],
         'filterStatus' => ['except' => ''],
         'sortColumn' => ['except' => 'id'],
         'sortDirection' => ['except' => 'asc'],
@@ -52,66 +55,70 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
     }
 
     /**
-     * Distinct categories currently in use, for the filter dropdown.
+     * Distinct cities currently in use, for the filter dropdown.
      */
     #[Computed]
-    public function categories()
+    public function cities()
     {
-        return Vendor::whereNotNull('category')
+        return Store::query()
             ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+            ->orderBy('city')
+            ->pluck('city');
     }
 
     #[Computed]
-    public function vendors()
+    public function stores()
     {
-        $query = Vendor::query()
+        $sortColumn = in_array($this->sortColumn, self::SORTABLE_COLUMNS, true) ? $this->sortColumn : 'id';
+        $sortDirection = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
+        $query = Store::query()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('contact_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                        ->orWhere('city', 'like', '%' . $this->search . '%')
+                        ->orWhere('area', 'like', '%' . $this->search . '%')
+                        ->orWhere('contact_name', 'like', '%' . $this->search . '%');
                 });
             })
-            ->when($this->filterCategory, function ($query) {
-                $query->where('category', $this->filterCategory);
+            ->when($this->filterCity, function ($query) {
+                $query->where('city', $this->filterCity);
             })
             ->when($this->filterStatus, function ($query) {
                 $query->where('status', $this->filterStatus);
             })
-            ->orderBy($this->sortColumn, $this->sortDirection);
+            ->orderBy($sortColumn, $sortDirection);
 
         return $query->paginate($this->perPage);
     }
 
     public function applyFilters()
     {
-        $this->filterCategory = $this->tempFilterCategory;
+        $this->filterCity = $this->tempFilterCity;
         $this->filterStatus = $this->tempFilterStatus;
         $this->resetPage();
     }
 
     public function resetFilters()
     {
-        $this->tempFilterCategory = '';
+        $this->tempFilterCity = '';
         $this->tempFilterStatus = '';
-        $this->filterCategory = '';
+        $this->filterCity = '';
         $this->filterStatus = '';
         $this->resetPage();
     }
 
-    #[On('vendor-saved')]
-    public function refreshVendors()
+    #[On('store-saved')]
+    public function refreshStores()
     {
-        unset($this->vendors);
+        unset($this->stores);
+        unset($this->cities);
     }
 
-    #[On('vendor-deleted')]
-    public function refreshVendorsAfterDelete()
+    #[On('store-deactivated')]
+    public function refreshStoresAfterDeactivate()
     {
-        unset($this->vendors);
-        $this->resetPage();
+        unset($this->stores);
     }
 };
 ?>
@@ -124,18 +131,18 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
       <div class="mb-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div>
           <h3 class="text-2xl font-bold tracking-tight text-neutral-heading">
-            Data Vendor
+            Daftar Toko
           </h3>
           <p class="mt-1 text-sm text-neutral-label">
-            Kelola daftar vendor beserta kontak dan statusnya
+            Kelola daftar toko beserta lokasi, kontak, jam buka, dan statusnya
           </p>
         </div>
 
         <div class="flex items-center gap-3">
-          <button wire:click="$dispatch('open-vendor-form')"
+          <button wire:click="$dispatch('open-store-form')"
             class="inline-flex items-center gap-2 rounded-xl bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-primary-hover">
             <x-svg.plus class="h-4 w-4" />
-            <span>Tambah Vendor</span>
+            <span>Tambah Toko</span>
           </button>
         </div>
       </div>
@@ -146,7 +153,7 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
           <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
             <x-svg.search class="h-4 w-4" />
           </span>
-          <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, kontak, email..."
+          <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, kota, area, kontak..."
             class="w-full rounded-xl border border-neutral-border bg-white py-3 pl-11 pr-4 text-sm text-gray-800 placeholder-neutral-label outline-none transition focus:border-accent-primary focus:ring-1 focus:ring-accent-primary dark:border-gray-800 dark:bg-white/[0.03] dark:text-white" />
         </div>
 
@@ -154,13 +161,13 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
           class="flex flex-col gap-4 rounded-[16px] border border-neutral-border bg-neutral-bg p-4 md:flex-row md:items-end md:justify-between dark:border-gray-800 dark:bg-white/[0.02]">
           <div class="flex flex-1 flex-wrap items-center gap-4">
             <div class="flex min-w-[200px] flex-1 flex-col gap-1.5">
-              <label class="text-sm font-normal text-neutral-label dark:text-gray-400">Kategori</label>
+              <label class="text-sm font-normal text-neutral-label dark:text-gray-400">Kota</label>
               <div class="relative">
-                <select wire:model="tempFilterCategory"
+                <select wire:model="tempFilterCity"
                   class="w-full appearance-none rounded-xl border border-neutral-border bg-white px-4 py-3 text-sm text-neutral-label outline-none transition focus:border-accent-primary dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                   <option value="">Semua</option>
-                  @foreach ($this->categories as $category)
-                    <option value="{{ $category }}">{{ $category }}</option>
+                  @foreach ($this->cities as $city)
+                    <option value="{{ $city }}">{{ $city }}</option>
                   @endforeach
                 </select>
                 <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
@@ -202,20 +209,23 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
       <!-- Table -->
       <div class="mb-6 overflow-hidden rounded-xl border border-neutral-border bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="custom-scrollbar max-w-full overflow-x-auto">
-          <table class="w-full min-w-[900px] font-sans">
+          <table class="w-full min-w-[1000px] font-sans">
             <thead>
               <tr class="border-b border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-white/[0.01]">
                 <x-tables.th-sortable column="id" :sortColumn="$sortColumn" :sortDirection="$sortDirection" class="w-[80px]">
                   ID
                 </x-tables.th-sortable>
                 <x-tables.th-sortable column="name" :sortColumn="$sortColumn" :sortDirection="$sortDirection">
-                  Vendor
+                  Toko
+                </x-tables.th-sortable>
+                <x-tables.th-sortable column="city" :sortColumn="$sortColumn" :sortDirection="$sortDirection">
+                  Kota
                 </x-tables.th-sortable>
                 <x-tables.th-sortable :sortable="false">
                   Kontak
                 </x-tables.th-sortable>
-                <x-tables.th-sortable column="category" :sortColumn="$sortColumn" :sortDirection="$sortDirection">
-                  Kategori
+                <x-tables.th-sortable :sortable="false">
+                  Jam Buka
                 </x-tables.th-sortable>
                 <x-tables.th-sortable column="status" :sortColumn="$sortColumn" :sortDirection="$sortDirection" align="center">
                   Status
@@ -226,33 +236,43 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-              @forelse ($this->vendors as $vendor)
-                <tr wire:key="vendor-{{ $vendor->id }}" class="transition-colors hover:bg-gray-50/30 dark:hover:bg-white/[0.01]">
+              @forelse ($this->stores as $store)
+                <tr wire:key="store-{{ $store->id }}" class="transition-colors hover:bg-gray-50/30 dark:hover:bg-white/[0.01]">
                   <td class="whitespace-nowrap px-6 py-4">
-                    <span class="text-sm font-semibold text-neutral-heading dark:text-white/90">#{{ $vendor->id }}</span>
+                    <span class="text-sm font-semibold text-neutral-heading dark:text-white/90">#{{ $store->id }}</span>
                   </td>
                   <td class="whitespace-nowrap px-6 py-4">
-                    <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">{{ $vendor->name }}</span>
-                    @if ($vendor->address)
-                      <span class="block max-w-xs truncate text-xs text-gray-400">{{ $vendor->address }}</span>
+                    <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">{{ $store->name }}</span>
+                    @if ($store->area)
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $store->area }}</span>
+                    @endif
+                    @if ($store->address)
+                      <span class="block max-w-xs truncate text-xs text-gray-400">{{ $store->address }}</span>
                     @endif
                   </td>
                   <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    @if ($vendor->contact_name)
-                      <span class="block">{{ $vendor->contact_name }}</span>
+                    {{ $store->city }}
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    @if ($store->contact_name)
+                      <span class="block">{{ $store->contact_name }}</span>
                     @endif
-                    @if ($vendor->phone)
-                      <span class="block text-xs text-gray-400">{{ $vendor->phone }}</span>
+                    @if ($store->contact_phone)
+                      <span class="block text-xs text-gray-400">{{ $store->contact_phone }}</span>
                     @endif
-                    @if ($vendor->email)
-                      <span class="block text-xs text-gray-400">{{ $vendor->email }}</span>
+                    @if (! $store->contact_name && ! $store->contact_phone)
+                      -
                     @endif
                   </td>
                   <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {{ $vendor->category ?? '-' }}
+                    @forelse ($store->openingHoursLabels() as $label)
+                      <span class="block">{{ $label }}</span>
+                    @empty
+                      -
+                    @endforelse
                   </td>
                   <td class="whitespace-nowrap px-6 py-4 text-center">
-                    @if ($vendor->status === 'active')
+                    @if ($store->status === 'active')
                       <div class="relative inline-flex content-stretch items-center justify-center rounded-[12px] bg-success-200 px-[10px] py-[6px]">
                         <p class="relative shrink-0 whitespace-nowrap text-center text-[14px] font-semibold not-italic leading-[20px] text-success-500">Aktif</p>
                       </div>
@@ -264,23 +284,25 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
                   </td>
                   <td class="whitespace-nowrap px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-3">
-                      <button wire:click="$dispatch('open-vendor-form', { id: {{ $vendor->id }} })"
+                      <button wire:click="$dispatch('open-store-form', { id: {{ $store->id }} })"
                         class="p-1 text-gray-500 transition-colors hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400"
                         title="Edit">
                         <x-svg.pencil class="h-5 w-5" />
                       </button>
-                      <button wire:click="$dispatch('open-vendor-delete', { id: {{ $vendor->id }}, name: '{{ addslashes($vendor->name) }}' })"
-                        class="p-1 text-gray-500 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-                        title="Hapus">
-                        <x-svg.trash class="h-5 w-5" />
-                      </button>
+                      @if ($store->status === 'active')
+                        <button wire:click="$dispatch('open-store-deactivate', { id: {{ $store->id }}, name: '{{ addslashes($store->name) }}' })"
+                          class="p-1 text-gray-500 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                          title="Nonaktifkan">
+                          <x-svg.trash class="h-5 w-5" />
+                        </button>
+                      @endif
                     </div>
                   </td>
                 </tr>
               @empty
                 <tr>
-                  <td colspan="6" class="px-6 py-10 text-center italic text-gray-400 dark:text-gray-500">
-                    Belum ada data vendor.
+                  <td colspan="7" class="px-6 py-10 text-center italic text-gray-400 dark:text-gray-500">
+                    Belum ada data toko.
                   </td>
                 </tr>
               @endforelse
@@ -308,7 +330,7 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
           <span class="text-sm font-medium text-gray-500 dark:text-gray-400">data</span>
         </div>
 
-        @php $paginator = $this->vendors; @endphp
+        @php $paginator = $this->stores; @endphp
         @if ($paginator->hasPages())
           <div class="flex items-center justify-center gap-1.5">
             <button wire:click="previousPage" @if ($paginator->onFirstPage()) disabled @endif
@@ -328,6 +350,6 @@ new #[Layout('layouts.app')] #[Title('Data Vendor')] class extends Component {
     </div>
   </div>
 
-  <livewire:vendor.vendor-form-modal />
-  <livewire:vendor.vendor-delete-modal />
+  <livewire:store.store-form-modal />
+  <livewire:store.store-deactivate-modal />
 </div>

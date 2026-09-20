@@ -21,13 +21,13 @@ class MenuHelper
                 ],
             ],
             [
-                'title' => 'Vendor',
+                'title' => 'Toko',
                 'items' => [
                     [
-                        'icon' => 'vendor',
-                        'name' => 'Data Vendor',
-                        'path' => '/vendor',
-                        'permission_key' => 'vendor:vendor',
+                        'icon' => 'store',
+                        'name' => 'Daftar Toko',
+                        'path' => '/store',
+                        'permission_key' => 'store:store',
                     ],
                 ],
             ],

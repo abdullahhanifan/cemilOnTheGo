@@ -19,7 +19,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | The super admin role bypasses every permission check (see Gate::before in
-    | AppServiceProvider). The default role is assigned to self-registered users.
+    | AppServiceProvider). The default role is neutral, with no permissions at all,
+    | and is assigned to self-registered users (public signup is off by default).
     |
     */
 

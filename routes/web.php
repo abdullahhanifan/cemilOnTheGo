@@ -13,10 +13,10 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard landing page
     Route::livewire('/dashboard', 'pages::dashboard.index')->name('dashboard');
 
-    // Vendor pages
-    Route::livewire('/vendor', 'pages::vendor.index')
-        ->name('vendor.index')
-        ->middleware('permission:vendor:vendor-view');
+    // Store pages
+    Route::livewire('/store', 'pages::store.index')
+        ->name('store.index')
+        ->middleware('permission:store:store-view');
 
     // RBAC pages
     Route::livewire('/rbac/users', 'pages::rbac.users')

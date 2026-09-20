@@ -24,7 +24,7 @@ test('guest is redirected to signin when accessing RBAC pages', function () {
 
 test('user without access-control permission is blocked from RBAC pages', function () {
     $user = User::factory()->create();
-    // Default role only has dashboard access
+    // The default role has no permissions at all
     $user->assignRole(config('alh.default_role'));
 
     $this->actingAs($user)
@@ -52,12 +52,14 @@ test('admin can access RBAC pages', function () {
         ->assertSuccessful();
 });
 
-test('seeder gives admin every permission and user only dashboard view', function () {
+test('seeder gives admin every permission and leaves the default and mitra roles empty', function () {
     $admin = Role::findByName(config('alh.super_admin_role'));
     $user = Role::findByName(config('alh.default_role'));
+    $mitra = Role::findByName('mitra');
 
     expect($admin->permissions)->toHaveCount(count(MenuHelper::getAllPermissions()));
-    expect($user->permissions->pluck('name')->all())->toEqual(['dashboard:dashboard-view']);
+    expect($user->permissions->pluck('name')->all())->toEqual([]);
+    expect($mitra->permissions->pluck('name')->all())->toEqual([]);
 });
 
 test('admin can deactivate user and selectedUser is reset to null', function () {
