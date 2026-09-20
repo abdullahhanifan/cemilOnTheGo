@@ -1,13 +1,18 @@
 <?php
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Models\Product;
 use App\Models\Store;
 
 new class extends Component {
+  use WithFileUploads;
+
   public int $productId = 0; // 0 for create, > 0 for edit
 
   public string $store_id = '';
@@ -20,6 +25,10 @@ new class extends Component {
   public string $notes = '';
   public string $status = 'active';
   public bool $buy_price_confirmed = false;
+
+  /** The newly chosen photo (a Livewire temporary upload), not yet stored. */
+  public $photo = null;
+  public bool $remove_photo = false;
 
   public bool $isAddEditOpen = false;
 
@@ -43,6 +52,47 @@ new class extends Component {
   public function selectedStore(): ?Store
   {
     return ctype_digit($this->store_id) ? Store::find((int) $this->store_id) : null;
+  }
+
+  /**
+   * URL of the photo the product being edited already has, if any.
+   */
+  #[Computed]
+  public function currentPhotoUrl(): ?string
+  {
+    return $this->productId > 0 ? Product::find($this->productId)?->photoUrl() : null;
+  }
+
+  private function photoMessages(): array
+  {
+    return [
+      'photo.image' => 'Foto harus berupa gambar.',
+      'photo.mimes' => 'Foto harus berformat JPG, PNG, atau WebP.',
+      'photo.max' => 'Ukuran foto maksimal 2 MB.',
+      'photo.dimensions' => 'Dimensi foto maksimal ' . Product::PHOTO_MAX_PIXELS . ' x ' . Product::PHOTO_MAX_PIXELS . ' piksel.',
+      'photo.uploaded' => 'Foto gagal diunggah. Coba lagi dengan berkas yang lebih kecil.',
+    ];
+  }
+
+  /**
+   * Check the photo as soon as it is chosen, so a bad file is reported before
+   * the form is submitted. saveProduct() validates it again.
+   */
+  public function updatedPhoto(): void
+  {
+    $this->validateOnly('photo', ['photo' => Product::photoRules()], $this->photoMessages(), ['photo' => 'Foto']);
+  }
+
+  /**
+   * Store the chosen photo under a random name. Neither the name nor the
+   * extension comes from the client: the name is random and the extension is
+   * derived from the file's content.
+   */
+  private function storePhoto(): string
+  {
+    $name = Str::random(40) . '.' . Product::photoExtension($this->photo);
+
+    return $this->photo->storeAs(Product::PHOTO_DIRECTORY, $name, Product::PHOTO_DISK);
   }
 
   /**
@@ -88,6 +138,8 @@ new class extends Component {
     $this->notes = '';
     $this->status = 'active';
     $this->buy_price_confirmed = false;
+    $this->photo = null;
+    $this->remove_photo = false;
     $this->resetValidation();
   }
 
@@ -132,6 +184,7 @@ new class extends Component {
       'sell_price' => 'required|integer|min:0|max:999999999',
       'notes' => 'nullable|string|max:2000',
       'status' => 'required|string|in:active,inactive',
+      'photo' => Product::photoRules(),
     ];
 
     if (! $isEdit) {
@@ -150,7 +203,7 @@ new class extends Component {
       'name.unique' => 'Produk dengan nama dan varian yang sama sudah ada di toko ini.',
       'buy_price.max' => 'Harga beli maksimal Rp 999.999.999.',
       'sell_price.max' => 'Harga jual maksimal Rp 999.999.999.',
-    ], [
+    ] + $this->photoMessages(), [
       'store_id' => 'Toko',
       'name' => 'Nama produk',
       'variant' => 'Varian',
@@ -160,6 +213,7 @@ new class extends Component {
       'sell_price' => 'Harga jual',
       'notes' => 'Catatan',
       'status' => 'Status',
+      'photo' => 'Foto',
     ]);
 
     $buyPrice = (int) $validated['buy_price'];
@@ -193,26 +247,53 @@ new class extends Component {
       403
     );
 
+    $oldPhotoPath = $product?->photo_path;
+    $newPhotoPath = null;
+
     try {
+      if ($this->photo) {
+        $newPhotoPath = $this->storePhoto();
+        $data['photo_path'] = $newPhotoPath;
+      } elseif ($product && $this->remove_photo) {
+        $data['photo_path'] = null;
+      }
+
       if ($product) {
         $product->update($data);
       } else {
         Product::create($data + ['store_id' => $storeId]);
       }
-
-      $this->isAddEditOpen = false;
-      $this->resetForm();
-      $this->dispatch('product-saved');
-      $msg = $isEdit ? 'Produk berhasil diperbarui!' : 'Produk berhasil ditambahkan!';
-      session()->flash('success', $msg);
-      $this->dispatch('notify', type: 'success', message: $msg);
     } catch (\Throwable $e) {
+      // Nothing points at the new file, so it must not be left behind.
+      if ($newPhotoPath) {
+        Storage::disk(Product::PHOTO_DISK)->delete($newPhotoPath);
+      }
+
       report($e);
       $this->isAddEditOpen = false;
       $msg = 'Gagal menyimpan produk. Silakan coba lagi.';
       session()->flash('error', $msg);
       $this->dispatch('notify', type: 'error', message: $msg);
+
+      return;
     }
+
+    // Saved. Only now drop the file that was replaced or removed; failing to
+    // delete it must not undo, or be reported as, a save that succeeded.
+    if ($oldPhotoPath && array_key_exists('photo_path', $data) && $data['photo_path'] !== $oldPhotoPath) {
+      try {
+        Storage::disk(Product::PHOTO_DISK)->delete($oldPhotoPath);
+      } catch (\Throwable $e) {
+        report($e);
+      }
+    }
+
+    $this->isAddEditOpen = false;
+    $this->resetForm();
+    $this->dispatch('product-saved');
+    $msg = $isEdit ? 'Produk berhasil diperbarui!' : 'Produk berhasil ditambahkan!';
+    session()->flash('success', $msg);
+    $this->dispatch('notify', type: 'success', message: $msg);
   }
 };
 ?>
@@ -369,6 +450,41 @@ new class extends Component {
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Catatan</label>
           <textarea wire:model="notes" rows="2" placeholder="Catatan tambahan (mis. stok terbatas, harga naik saat akhir pekan)"
             class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"></textarea>
+        </div>
+
+        <!-- Photo -->
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Foto Produk <span class="font-normal text-gray-400">(opsional)</span></label>
+          <div class="flex items-start gap-4">
+            <div
+              class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03]">
+              @if ($photo && ! $errors->has('photo') && $photo->isPreviewable())
+                <img src="{{ $photo->temporaryUrl() }}" alt="Pratinjau foto" class="h-full w-full object-cover" />
+              @elseif ($this->currentPhotoUrl && ! $remove_photo)
+                <img src="{{ $this->currentPhotoUrl }}" alt="Foto produk saat ini" class="h-full w-full object-cover" />
+              @else
+                <x-svg.product class="h-8 w-8 text-gray-300 dark:text-gray-600" />
+              @endif
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <input type="file" wire:model="photo" accept="image/jpeg,image/png,image/webp"
+                class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gray-700 hover:file:bg-gray-200 dark:text-gray-400 dark:file:bg-white/5 dark:file:text-gray-300" />
+              <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">JPG, PNG, atau WebP. Maksimal 2 MB.</p>
+              <p wire:loading wire:target="photo" class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mengunggah...</p>
+              @error('photo')
+              <span class="mt-1 block text-xs text-red-500">{{ $message }}</span>
+              @enderror
+
+              @if ($productId > 0 && $this->currentPhotoUrl && ! $photo)
+                <label class="mt-2 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400">
+                  <input type="checkbox" wire:model.live="remove_photo"
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700" />
+                  <span>Hapus foto ini</span>
+                </label>
+              @endif
+            </div>
+          </div>
         </div>
 
         <!-- Status -->

@@ -6,7 +6,9 @@ use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * An item sold at one store. Each variant (size, flavor, ...) is a separate product.
@@ -25,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property int $sell_price
  * @property Carbon|null $buy_price_checked_at
  * @property string|null $notes
+ * @property string|null $photo_path Path on the public disk, or null when there is no photo.
  * @property string $status
  * @property-read Store $store
  */
@@ -32,6 +35,24 @@ class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
+
+    /** A product has at most one photo, kept on the public disk under a random file name. */
+    public const PHOTO_DISK = 'public';
+
+    public const PHOTO_DIRECTORY = 'products';
+
+    /** Largest accepted photo, in kilobytes (2 MB). */
+    public const PHOTO_MAX_KB = 2048;
+
+    /** Largest accepted photo width and height, in pixels. */
+    public const PHOTO_MAX_PIXELS = 6000;
+
+    /**
+     * Accepted photo types. SVG is deliberately absent: it can carry scripts.
+     *
+     * @var list<string>
+     */
+    public const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
     protected $fillable = [
         'store_id',
@@ -43,6 +64,7 @@ class Product extends Model
         'sell_price',
         'buy_price_checked_at',
         'notes',
+        'photo_path',
         'status',
     ];
 
@@ -66,6 +88,51 @@ class Product extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    /**
+     * Validation rules for a product photo. The type is checked on the file's
+     * content, not on its client-supplied name, so renaming a file does not get
+     * it past.
+     *
+     * @return list<string>
+     */
+    public static function photoRules(): array
+    {
+        return [
+            'nullable',
+            'image',
+            'mimes:'.implode(',', self::PHOTO_EXTENSIONS),
+            'max:'.self::PHOTO_MAX_KB,
+            'dimensions:max_width='.self::PHOTO_MAX_PIXELS.',max_height='.self::PHOTO_MAX_PIXELS,
+        ];
+    }
+
+    /**
+     * Extension an accepted photo is stored under. It comes from the file's
+     * content, never from the name the client gave it.
+     *
+     * @throws InvalidArgumentException When the content is not an accepted photo type.
+     */
+    public static function photoExtension(UploadedFile $file): string
+    {
+        $extension = $file->guessExtension();
+        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+
+        if (! in_array($extension, ['jpg', 'png', 'webp'], true)) {
+            throw new InvalidArgumentException('The file is not an accepted product photo type.');
+        }
+
+        return $extension;
+    }
+
+    /**
+     * Public URL of the photo, or null when there is none. Built from the current
+     * request so it works whatever host or port the app is served on.
+     */
+    public function photoUrl(): ?string
+    {
+        return $this->photo_path ? asset('storage/'.$this->photo_path) : null;
     }
 
     /**

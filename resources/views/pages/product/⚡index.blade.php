@@ -249,13 +249,25 @@ new #[Layout('layouts.app')] #[Title('Daftar Produk')] class extends Component {
                     <span class="text-sm font-semibold text-neutral-heading dark:text-white/90">#{{ $product->id }}</span>
                   </td>
                   <td class="whitespace-nowrap px-6 py-4">
-                    <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">{{ $product->name }}</span>
-                    @if ($product->variant !== '')
-                      <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $product->variant }}</span>
-                    @endif
-                    <span class="block text-xs text-gray-400">
-                      Satuan: {{ $product->unit }}@if ($product->sku) · Kode: {{ $product->sku }}@endif
-                    </span>
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03]">
+                        @if ($product->photo_path)
+                          <img src="{{ $product->photoUrl() }}" alt="{{ $product->name }}" loading="lazy" class="h-full w-full object-cover" />
+                        @else
+                          <x-svg.product class="h-5 w-5 text-gray-300 dark:text-gray-600" />
+                        @endif
+                      </div>
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">{{ $product->name }}</span>
+                        @if ($product->variant !== '')
+                          <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $product->variant }}</span>
+                        @endif
+                        <span class="block text-xs text-gray-400">
+                          Satuan: {{ $product->unit }}@if ($product->sku) · Kode: {{ $product->sku }}@endif
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                     <span class="block">{{ $product->store->name }}</span>
