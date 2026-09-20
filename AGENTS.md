@@ -157,7 +157,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Identity
 
-ALH Core — Laravel + Livewire starter kit (git template repository). Before changing code, read `SPEC_ALHCore_v0.1.md`; the companion documents (`SESSION-SUMMARY.md`, `DESIGN_SYSTEM.md`, `SECURITY_GUIDELINES.md`) are added in Tahap 3.
+**Required reading before any work:** `docs/PROJECT_DIRECTION.md` (product goal, decisions, module roadmap, shared working rules, and the decision/schema change log), together with this file.
+
+cemilOnTheGo — internal jastip (personal shopping) management app on Laravel + Livewire, started from the ALHCore starter kit. The Store (Toko) and Product (Produk) lists exist so far; partner purchases, invoices, deliveries and partner payments are not built yet. Code identifiers are English (`Store`), UI labels are Indonesian ("Toko"). Before changing code, read `SPEC_ALHCore_v0.1.md` (the starter-kit spec); the companion documents (`SESSION-SUMMARY.md`, `DESIGN_SYSTEM.md`, `SECURITY_GUIDELINES.md`) do not exist in this repository.
 
 Colors and font are tokens in `@theme` (`resources/css/app.css`). Use the utilities (`bg-accent-primary`, `text-neutral-label`, `border-neutral-border`, `font-sans`) instead of hard-coded hex values. Accent (brand) and neutral (structure) tokens are separate on purpose and must not reference each other.
 
@@ -243,7 +245,7 @@ Actions are always: `view`, `create`, `edit`, `delete`.
 
 ### Roles
 
-`config('alh.super_admin_role')` (default `admin`) receives every permission and bypasses all checks through `Gate::before`. `config('alh.default_role')` (default `user`) only has `dashboard:dashboard-view`. Roles are created in `RbacSeeder`, never by hand.
+`config('alh.super_admin_role')` (default `admin`) receives every permission and bypasses all checks through `Gate::before`. `config('alh.default_role')` (default `user`) is a neutral role with no permissions at all. A `mitra` role is seeded empty and unused: partners are records in the `partners` table, not users. Roles are created in `RbacSeeder`, never by hand.
 
 ### Adding a new menu page with permissions
 

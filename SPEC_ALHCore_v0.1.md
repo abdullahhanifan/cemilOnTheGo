@@ -8,7 +8,7 @@
 
 ## 1. Latar Belakang & Tujuan
 
-Setiap project baru (client, abdimas, internal PT. Cipta Digital Global Teknologi) selalu mengulang pekerjaan yang sama di awal: autentikasi, role & permission, layout admin (sidebar/header), komponen UI dasar, dan Manajemen User. Ini memakan waktu dan berisiko inkonsistensi kualitas antar-project.
+Setiap project baru (client, abdimas, internal) selalu mengulang pekerjaan yang sama di awal: autentikasi, role & permission, layout admin (sidebar/header), komponen UI dasar, dan Manajemen User. Ini memakan waktu dan berisiko inkonsistensi kualitas antar-project.
 
 **ALH Core** dibuat sebagai **starter kit / boilerplate** berbentuk **git template repository**, sehingga project baru bisa langsung "Use this template" dan mulai dari fitur bisnis, bukan dari nol. Setiap project turunan mendapat salinan kode sendiri; perbaikan di ALH Core tidak otomatis sampai ke project yang sudah berjalan.
 
@@ -34,7 +34,7 @@ Tujuan v0.1:
 
 - **Bentuk:** GitHub git template repository (bukan package Composer, bukan sub-tree). Alasan: paling cepat dipakai ulang ("Use this template" → repo baru bersih tanpa histori git lama), dan tetap mudah di-maintain sebagai satu sumber kebenaran.
 - **Nama repository:** `alh-core`.
-- **Nama produk/branding di dalam kode:** `ALH Core` (dipakai di README, judul default aplikasi sebelum diganti per-project). Nama package Composer default: `ciptadigital/alh-core`, lisensi `proprietary` **[Usulan]**.
+- **Nama produk/branding di dalam kode:** `ALH Core` (dipakai di README, judul default aplikasi sebelum diganti per-project). Nama package Composer default: `<namespace>/alh-core`, lisensi `proprietary` **[Usulan]**.
 - **Versioning:** tag semver (`v0.1.0`, dst) di repo template itu sendiri, supaya project turunan tahu dari versi ALH Core mana mereka mulai. Untuk v0.1, tidak perlu mekanisme sinkronisasi otomatis — cukup tag.
 - **[Rev 1] Status git lokal:** folder `ALHCore` sudah `git init` baru tanpa remote dan tanpa histori UNDIP (terverifikasi: `remote -v` kosong, `count-objects` nol, tidak ada `.git` bersarang maupun `.gitmodules`). Commit pertama baru dibuat setelah Tahap 1 selesai dan direview, supaya kode UNDIP tidak masuk histori. Sebelum agent berjalan, backup folder utuh dibuat di luar repo.
 - **[Rev 1]** Repo GitHub dibuat **private** dulu, dan baru dijadikan template repository setelah verifikasi end-to-end (§9 langkah 6) lolos.
@@ -209,7 +209,7 @@ README.md
 1. **Identitas login.** Default: `username` (seperti UNDIP), `email` wajib untuk reset password. Alternatif: login dengan email.
 2. **Penamaan permission.** Usulan: skema UNDIP `modul:fitur-aksi` (§4). Alternatif: kembali ke `lihat-user` / `kelola-user`, dengan konsekuensi menulis ulang mekanisme permission-dari-menu dan modal role.
 3. **Penempatan captcha.** Usulan: signin, signup, forgot-password.
-4. **Nama package dan lisensi** (`ciptadigital/alh-core`, `proprietary`), dan **versi TailAdmin** yang dipakai (free atau pro) sebelum template dibagikan.
+4. **Nama package dan lisensi** (`<namespace>/alh-core`, `proprietary`), dan **versi TailAdmin** yang dipakai (free atau pro) sebelum template dibagikan.
 
 ### 8.4 Diverifikasi di tahap berikutnya
 
