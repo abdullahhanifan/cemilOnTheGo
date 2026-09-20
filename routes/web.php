@@ -18,6 +18,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('store.index')
         ->middleware('permission:store:store-view');
 
+    // Product pages
+    Route::livewire('/product', 'pages::product.index')
+        ->name('product.index')
+        ->middleware('permission:product:product-view');
+
     // RBAC pages
     Route::livewire('/rbac/users', 'pages::rbac.users')
         ->name('rbac.users')

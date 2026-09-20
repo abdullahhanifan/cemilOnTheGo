@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A shop (mall outlet, market stall, ...) where a partner can be asked to buy goods.
@@ -64,6 +65,14 @@ class Store extends Model
         return [
             'opening_hours' => 'array',
         ];
+    }
+
+    /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 
     /**

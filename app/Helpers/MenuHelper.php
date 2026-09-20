@@ -29,6 +29,12 @@ class MenuHelper
                         'path' => '/store',
                         'permission_key' => 'store:store',
                     ],
+                    [
+                        'icon' => 'product',
+                        'name' => 'Daftar Produk',
+                        'path' => '/product',
+                        'permission_key' => 'product:product',
+                    ],
                 ],
             ],
             [
