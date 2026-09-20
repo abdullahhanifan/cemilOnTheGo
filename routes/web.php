@@ -23,6 +23,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('product.index')
         ->middleware('permission:product:product-view');
 
+    // Partner pages
+    Route::livewire('/partner', 'pages::partner.index')
+        ->name('partner.index')
+        ->middleware('permission:partner:partner-view');
+
     // RBAC pages
     Route::livewire('/rbac/users', 'pages::rbac.users')
         ->name('rbac.users')

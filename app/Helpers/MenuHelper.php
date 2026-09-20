@@ -38,6 +38,17 @@ class MenuHelper
                 ],
             ],
             [
+                'title' => 'Mitra',
+                'items' => [
+                    [
+                        'icon' => 'partner',
+                        'name' => 'Daftar Mitra',
+                        'path' => '/partner',
+                        'permission_key' => 'partner:partner',
+                    ],
+                ],
+            ],
+            [
                 'title' => 'Access Control',
                 'items' => [
                     [

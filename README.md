@@ -11,7 +11,8 @@ Built on Laravel + Livewire, started from the ALHCore starter kit (login, roles 
 | Access control (users, roles) | Done (from the starter kit) |
 | **Toko** (stores) | Done: list, create, edit, deactivate |
 | **Produk** (products) | Done: list, create, edit, deactivate, one optional photo |
-| Mitra (partners), invoices, deliveries, partner purchases and payments | Not started |
+| **Mitra** (partners) | Done: list, create, edit, deactivate |
+| Invoices, deliveries, partner purchases and payments | Not started |
 
 ## Requirements
 
@@ -89,8 +90,17 @@ A product belongs to exactly one store and has a name, an optional variant, an o
 
 See [docs/PROJECT_DIRECTION.md](docs/PROJECT_DIRECTION.md) for the decisions behind the modules (including that partner purchases are entered by the admin for now, because partner login is postponed).
 
-## Development
+## Mitra (partners)
 
+A partner (mitra) is someone who buys goods at a store on request and is paid afterwards. Partners are records in their own `partners` table, not users. Purchases and payments will reference them through `partner_id`.
+
+- Fields: name, phone, city, area, payment method (`bank` or `e_wallet`), payment provider (free text such as BCA or GoPay, optional), account name, account number, notes and a status. Name, phone and city are required. Payment method, account name and account number are all filled or all empty; a provider on its own is refused. The list shows the provider next to the method.
+- Permissions: `partner:partner-view`, `partner:partner-create`, `partner:partner-edit`, `partner:partner-delete`. Other modules' permissions grant nothing here.
+- Partners are never deleted. "Nonaktifkan" needs `partner:partner-delete`, also when the status is flipped in the edit form; reactivating needs only `partner:partner-edit`.
+- **The account number is encrypted** with `APP_KEY`. In the list only its last four digits are shown; the full number is loaded only into the edit form (which needs `partner:partner-edit`). It is hidden from model serialization and can be neither searched nor sorted on. Keep `APP_KEY` safe: if it is lost or changed, stored numbers can no longer be read and have to be entered again (the page keeps working and says so).
+- `partners.user_id` (nullable, unique) is reserved for a future partner login. Nothing reads or writes it yet.
+
+See [docs/PROJECT_DIRECTION.md]
 - `composer run dev`: server, queue listener and Vite
 - `php artisan test`: Pest suite (in-memory SQLite, never touches your MySQL database)
 - `vendor/bin/pint`: code style

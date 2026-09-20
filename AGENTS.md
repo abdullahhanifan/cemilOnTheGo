@@ -159,7 +159,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 **Required reading before any work:** `docs/PROJECT_DIRECTION.md` (product goal, decisions, module roadmap, shared working rules, and the decision/schema change log), together with this file.
 
-cemilOnTheGo — internal jastip (personal shopping) management app on Laravel + Livewire, started from the ALHCore starter kit. The Store (Toko) and Product (Produk) lists exist so far; partner purchases, invoices, deliveries and partner payments are not built yet. Code identifiers are English (`Store`), UI labels are Indonesian ("Toko"). Before changing code, read `SPEC_ALHCore_v0.1.md` (the starter-kit spec); the companion documents (`SESSION-SUMMARY.md`, `DESIGN_SYSTEM.md`, `SECURITY_GUIDELINES.md`) do not exist in this repository.
+cemilOnTheGo — internal jastip (personal shopping) management app on Laravel + Livewire, started from the ALHCore starter kit. The Store (Toko), Product (Produk) and Partner (Mitra) modules exist so far; partner purchases, invoices, deliveries and partner payments are not built yet. Code identifiers are English (`Store`), UI labels are Indonesian ("Toko"). Before changing code, read `SPEC_ALHCore_v0.1.md` (the starter-kit spec); the companion documents (`SESSION-SUMMARY.md`, `DESIGN_SYSTEM.md`, `SECURITY_GUIDELINES.md`) do not exist in this repository.
 
 Colors and font are tokens in `@theme` (`resources/css/app.css`). Use the utilities (`bg-accent-primary`, `text-neutral-label`, `border-neutral-border`, `font-sans`) instead of hard-coded hex values. Accent (brand) and neutral (structure) tokens are separate on purpose and must not reference each other.
 

@@ -19,7 +19,7 @@ test('admin gets all menu groups and items in filtered sidebar', function () {
     $filteredGroups = MenuHelper::getFilteredMenuGroups($admin);
 
     expect($filteredGroups)->toHaveCount(count($allGroups));
-    expect(array_column($filteredGroups, 'title'))->toEqual(['Dashboard', 'Toko', 'Access Control']);
+    expect(array_column($filteredGroups, 'title'))->toEqual(['Dashboard', 'Toko', 'Mitra', 'Access Control']);
 });
 
 test('default role has no permissions and sees no group in the filtered sidebar', function () {
@@ -56,6 +56,10 @@ test('menu permissions are derived per action from the menu keys', function () {
         'product:product-create',
         'product:product-edit',
         'product:product-delete',
+        'partner:partner-view',
+        'partner:partner-create',
+        'partner:partner-edit',
+        'partner:partner-delete',
         'access-control:users-view',
         'access-control:users-create',
         'access-control:users-edit',

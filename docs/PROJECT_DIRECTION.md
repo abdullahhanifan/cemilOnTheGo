@@ -29,7 +29,7 @@ Permission diturunkan dari `app/Helpers/MenuHelper.php` dengan pola `modul:fitur
 - Identifier kode berbahasa Inggris (`Store`), label UI berbahasa Indonesia ("Toko").
 - Toko dinonaktifkan lewat status, bukan dihapus, karena akan direferensikan produk, invoice, dan pembayaran mitra.
 - Role: `admin` (akses penuh) dan `user` (role netral bawaan, tanpa permission sama sekali; dipakai pendaftar publik, dan pendaftaran publik nonaktif secara default). Role `mitra` tetap di-seed, tetapi kosong dan tidak dipakai.
-- **Mitra adalah tabel `partners` sendiri, bukan `User` ber-role `mitra`.** Kolom: `name`, `phone`, city/area, `payment_method` (bank atau e-wallet), `account_name`, `account_number` (cast `encrypted`), `notes`, `status` (aktif/nonaktif), dan `user_id` nullable + unique. `user_id` hanya cadangan untuk login mitra nanti dan **tidak dipakai sekarang**. Permission `partner:partner-view|create|edit|delete`, dengan pola nonaktifkan yang sama seperti Toko. Transaksi pembelian dan pembayaran ke mitra nanti memakai FK `partner_id`.
+- **Mitra adalah tabel `partners` sendiri, bukan `User` ber-role `mitra`.** Kolom: `name`, `phone`, city/area, `payment_method` (bank atau e-wallet), `payment_provider` (teks bebas, opsional), `account_name`, `account_number` (cast `encrypted`), `notes`, `status` (aktif/nonaktif), dan `user_id` nullable + unique. `user_id` hanya cadangan untuk login mitra nanti dan **tidak dipakai sekarang**. Permission `partner:partner-view|create|edit|delete`, dengan pola nonaktifkan yang sama seperti Toko. Transaksi pembelian dan pembayaran ke mitra nanti memakai FK `partner_id`.
 - Harga beli dari toko dipisah dari harga jual ke customer. Selisihnya adalah margin dan dipakai di invoice.
 - Modul Vendor bawaan ALHCore sudah diubah menjadi Toko.
 
@@ -67,6 +67,13 @@ Ini sudah berjalan di kode. Tandai di sini bila ingin diubah.
 - Harga diinput sebagai angka bulat 0 sampai 999.999.999. Estimasi margin dalam persen dihitung terhadap harga jual.
 - "Daftar Produk" berada di grup menu "Toko".
 
+Mitra:
+
+- `city` dan `area` adalah dua kolom, seperti Toko. `name`, `phone`, dan `city` wajib; `area` opsional.
+- Metode, nama pemilik rekening, dan nomor rekening diisi lengkap atau dikosongkan semua. Metode bernilai `bank` atau `e_wallet`. `payment_provider` (nama bank atau e-wallet, mis. BCA, GoPay) adalah teks bebas dan opsional, tidak dicocokkan dengan metode; bila diisi sendirian, tiga data lainnya menjadi wajib. Di daftar, penyedia tampil di samping metode.
+- Nomor rekening: 5 sampai 30 digit, boleh diawali `+`; spasi dan tanda hubung dibuang saat disimpan. Disimpan terenkripsi dengan `APP_KEY` (kolom `text`), disembunyikan dari serialisasi model, tersamar di daftar (hanya 4 digit terakhir), lengkap hanya di form edit (perlu `partner:partner-edit`), dan tidak bisa dicari atau diurutkan. **`APP_KEY` tidak boleh hilang atau diganti**: nomor lama menjadi tidak terbaca, dan admin diminta memasukkannya ulang.
+- Grup menu "Mitra" berada setelah "Toko".
+
 ## 4. Roadmap berurutan
 
 Status: belum mulai / sedang dikerjakan / selesai. Perbarui baris ini saat status berubah, dan isi kolom "Dikerjakan oleh" dengan agent dan branch-nya.
@@ -75,10 +82,16 @@ Status: belum mulai / sedang dikerjakan / selesai. Perbarui baris ini saat statu
 |---|---|---|---|---|
 | 1 | Toko | selesai | Claude Code / `main` | |
 | 2 | Produk (milik satu toko) | selesai | Claude Code / `main` | CRUD dan satu foto opsional. |
-| 3 | Mitra | belum mulai | - | Tabel `partners` sendiri (lihat bagian 3). Cakupan modul ini hanya data mitra (CRUD `partners`); transaksi pembelian dan pembayaran nanti memakai FK `partner_id`. |
-| 4 | Invoice ke customer | belum mulai | - | `invoice_items` menyalin nama dan harga produk; harga per baris boleh diubah. Pajak dan biaya layanan di tingkat invoice. |
-| 5 | Jadwal pengiriman | belum mulai | - | |
-| 6 | Pembayaran ke mitra | belum mulai | - | Berdasarkan harga beli aktual pada transaksi pembelian mitra (diinput admin), memakai FK `partner_id`. |
+| 3 | Mitra | selesai | Claude Code / `feature/partner` | Menunggu review dan merge ke `main`. CRUD `partners` dengan nomor rekening terenkripsi (lihat bagian 3). Transaksi pembelian dan pembayaran nanti memakai FK `partner_id`. |
+| 4 | Transaksi pembelian mitra | belum mulai | - | **Modul berikutnya.** Diinput oleh admin (login mitra ditunda), memakai FK `partner_id`, dan mencatat harga beli aktual. Skemanya belum dirancang. |
+| 5 | Invoice ke customer | belum mulai | - | `invoice_items` menyalin nama dan harga produk; harga per baris boleh diubah. Pajak dan biaya layanan di tingkat invoice. |
+| 6 | Jadwal pengiriman | belum mulai | - | |
+| 7 | Pembayaran ke mitra | belum mulai | - | Berdasarkan harga beli aktual pada transaksi pembelian mitra (diinput admin), memakai FK `partner_id`. |
+
+### Langkah berikutnya
+
+- **Modul berikutnya adalah transaksi pembelian mitra** (baris 4). Rancang cakupan dan skemanya lebih dulu, dan minta persetujuan Kang sebelum membuat migrasi.
+- **Aset merek belum dipasang ke UI.** Berkas `logo-icon`, `logo-horizontal`, dan `login-illustration` di `public/images/brand/` sudah dibuat tetapi belum dipasang: tidak ada kode yang merujuk `logo-horizontal` atau `login-illustration`, dan halaman login tidak memakai gambar merek. Sidebar masih merujuk `logo.svg` (placeholder) dan `logo-icon.svg`; yang terakhir sudah berisi desain baru di working tree, tetapi belum di-commit. Berkas-berkas baru itu juga belum di-commit. Pemasangannya adalah pekerjaan tersendiri: ganti rujukan di layout dan halaman login, lalu commit aset dan kodenya bersama.
 
 ## 5. Aturan kerja bersama
 
@@ -95,5 +108,10 @@ Setiap agent menambah satu baris di bawah header setiap kali membuat keputusan d
 
 | Tanggal | Agent/branch | Keputusan atau perubahan | Alasan |
 |---|---|---|---|
+| 2026-09-20 | Claude Code / `main` | Migrasi `create_stores_table`: tabel `stores` (nama, kota, area, alamat, kontak, jam buka JSON, catatan, status), menggantikan tabel `vendors` bawaan template. Commit `0a8dd8c`, dicatat belakangan. | Modul Vendor diubah menjadi Toko. Jam buka berupa JSON karena bisa berbeda per rentang hari. Status dipakai untuk nonaktif tanpa hapus. |
+| 2026-09-20 | Claude Code / `main` | Migrasi `create_products_table`: tabel `products` (FK `store_id`, unik per toko + nama + varian, harga dalam Rupiah utuh, `buy_price_checked_at`). Commit `120476a`, dicatat belakangan. | Produk milik satu toko tanpa tabel varian. Harga beli dan jual dipisah, dan hanya berupa harga acuan. |
+| 2026-09-20 | Claude Code / `main` | Migrasi `add_photo_path_to_products_table`: kolom `photo_path` nullable. Commit `8e7d8a5`, dicatat belakangan. | Satu foto opsional per produk, dikerjakan sebagai langkah terpisah setelah CRUD. Yang disimpan hanya path acak di disk `public`. |
 | 2026-09-20 | Kang, dicatat oleh Claude Code / `main` | Mitra memakai tabel `partners` sendiri, bukan `User` ber-role `mitra`. Menggantikan keputusan sebelumnya "mitra memakai role Spatie". | Data rekening dan lokasi mitra tidak cocok disimpan di `users`. Login mitra ditunda, jadi `partners.user_id` (nullable, unique) hanya dicadangkan. |
 | 2026-09-20 | Kang, dicatat oleh Claude Code / `main` | `default_role` kembali ke role netral `user` tanpa permission. Role `mitra` tetap di-seed, kosong, dan tidak dipakai. Pendaftaran publik tetap nonaktif. | Role bawaan tidak boleh membawa akses. Role `mitra` dicadangkan untuk login mitra nanti. |
+| 2026-09-20 | Claude Code / `feature/partner` | Migrasi `create_partners_table`: tabel `partners` dengan `user_id` nullable + unique (cadangan, tidak dipakai) dan `account_number` bertipe `text` terenkripsi. | Pelaksanaan keputusan mitra sebagai tabel sendiri. Ciphertext jauh lebih panjang daripada nomornya, maka `text`. |
+| 2026-09-20 | Kang, dicatat oleh Claude Code / `feature/partner` | Tambah kolom `payment_provider` (teks bebas, nullable) ke migrasi `create_partners_table`, sebelum migrasi itu di-commit. | Nomor rekening ambigu tanpa nama bank atau e-wallet (mis. BCA, GoPay). |
